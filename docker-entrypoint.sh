@@ -18,9 +18,9 @@ chmod +x /app/gh-proxy
 
 echo "make config"
 cp /app/config.json.dist /app/config.json
-sed -i "s|$WHITE_LIST|%WHITE_LIST%|g" /app/config.json
-sed -i "s|$BLACK_LIST|%BLACK_LIST%|g" /app/config.json
-sed -i "s|$ALLOW_PROXY_ALL|%ALLOW_PROXY_ALL%|g" /app/config.json
+sed -i "s|%WHITE_LIST%|$WHITE_LIST|g" /app/config.json
+sed -i "s|%BLACK_LIST%|$BLACK_LIST|g" /app/config.json
+sed -i "s|%ALLOW_PROXY_ALL%|$ALLOW_PROXY_ALL|g" /app/config.json
 
 echo "Starting..."
 su-exec ${USER} /app/gh-proxy "$@"
