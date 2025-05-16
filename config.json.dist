@@ -1,0 +1,9 @@
+{
+  "whiteList": [
+    %WHITE_LIST%
+  ],
+  "blackList": [
+    %BLACK_LIST%
+  ],
+  "AllowProxyAll": %ALLOW_PROXY_ALL%
+}

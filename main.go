@@ -1,10 +1,12 @@
 package main
 
 import (
+	"embed"
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"io"
+	"io/fs"
 	"net"
 	"net/http"
 	"os"
@@ -21,6 +23,9 @@ const (
 	port      = 8080                    // 监听端口
 )
 
+//go:embed public/*
+var public embed.FS
+
 var (
 	exps = []*regexp.Regexp{
 		regexp.MustCompile(`^(?:https?://)?github\.com/([^/]+)/([^/]+)/(?:releases|archive)/.*$`),
@@ -35,8 +40,9 @@ var (
 )
 
 type Config struct {
-	WhiteList []string `json:"whiteList"`
-	BlackList []string `json:"blackList"`
+	WhiteList     []string `json:"whiteList"`
+	BlackList     []string `json:"blackList"`
+	AllowProxyAll bool     `json:"allowProxyAll"` // 是否允许代理非github的其他地址
 }
 
 func main() {
@@ -66,13 +72,27 @@ func main() {
 		}
 	}()
 
-	router.StaticFile("/", "./public/index.html")
-	router.StaticFile("/favicon.ico", "./public/favicon.ico")
-	router.StaticFile("/logo.png", "./public/logo.png")
+	b, e := public.ReadDir("public")
+	if e != nil {
+		panic(e)
+	}
+	for _, entry := range b {
+		fmt.Printf("name: %+v \r\n", entry)
+	}
+	// 修改静态文件服务方式
+	subFS, err := fs.Sub(public, "public")
+	if err != nil {
+		panic(fmt.Sprintf("无法创建子文件系统: %v", err))
+	}
 
+	// 使用 StaticFileFS 提供静态文件
+	router.StaticFS("/", http.FS(subFS))
+	// router.StaticFile("/", "./public/index.html")
+	// router.StaticFile("/favicon.ico", "./public/favicon.ico")
+	// router.StaticFile("/logo.png", "./public/logo.png")
 	router.NoRoute(handler)
 
-	err := router.Run(fmt.Sprintf("%s:%d", host, port))
+	err = router.Run(fmt.Sprintf("%s:%d", host, port))
 	if err != nil {
 		fmt.Printf("Error starting server: %v\n", err)
 	}
@@ -101,8 +121,18 @@ func handler(c *gin.Context) {
 			return
 		}
 	} else {
-		c.String(http.StatusForbidden, "Invalid input.")
-		return
+		if !config.AllowProxyAll {
+			c.String(http.StatusForbidden, "Invalid input.")
+			return
+		}
+		if len(config.WhiteList) > 0 && !checkList(matches, config.WhiteList) {
+			c.String(http.StatusForbidden, "Forbidden by white list.")
+			return
+		}
+		if len(config.BlackList) > 0 && checkList(matches, config.BlackList) {
+			c.String(http.StatusForbidden, "Forbidden by black list.")
+			return
+		}
 	}
 
 	if exps[1].MatchString(rawPath) {
