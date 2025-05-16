@@ -5,5 +5,11 @@
     "example3",
     "example4"
   ],
-  "AllowProxyAll": false
+  "AllowProxyAll": false,
+  "otherWhiteList": [
+  ],
+  "otherBlackList": [
+    "example3",
+    "example4"
+  ]
 }

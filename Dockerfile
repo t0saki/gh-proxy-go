@@ -34,6 +34,8 @@ ENV UMASK=002
 ENV WHITE_LIST=""
 ENV BLACK_LIST="\"example3\",\"example4\""
 ENV ALLOW_PROXY_ALL="false"
+ENV OTHER_WHITE_LIST=""
+ENV OTHER_BLACK_LIST="\"example3\",\"example4\""
 
 COPY --from=builder /build/gh-proxy /app/
 COPY --from=builder /build/config.json.dist /app/

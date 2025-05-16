@@ -5,5 +5,11 @@
   "blackList": [
     %BLACK_LIST%
   ],
-  "AllowProxyAll": %ALLOW_PROXY_ALL%
+  "AllowProxyAll": %ALLOW_PROXY_ALL%,
+  "otherWhiteList": [
+    %OTHER_WHITE_LIST%
+  ],
+  "otherBlackList": [
+    %OTHER_BLACK_LIST%
+  ]
 }

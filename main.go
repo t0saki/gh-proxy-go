@@ -40,9 +40,11 @@ var (
 )
 
 type Config struct {
-	WhiteList     []string `json:"whiteList"`
-	BlackList     []string `json:"blackList"`
-	AllowProxyAll bool     `json:"allowProxyAll"` // 是否允许代理非github的其他地址
+	WhiteList      []string `json:"whiteList"`
+	BlackList      []string `json:"blackList"`
+	AllowProxyAll  bool     `json:"allowProxyAll"` // 是否允许代理非github的其他地址
+	OtherWhiteList []string `json:"otherWhiteList"`
+	OtherBlackList []string `json:"otherBlackList"`
 }
 
 func main() {
@@ -118,11 +120,11 @@ func handler(c *gin.Context) {
 			c.String(http.StatusForbidden, "Invalid input.")
 			return
 		}
-		if len(config.WhiteList) > 0 && !checkList(matches, config.WhiteList) {
+		if len(config.OtherWhiteList) > 0 && !checkOhterList(rawPath, config.OtherWhiteList) {
 			c.String(http.StatusForbidden, "Forbidden by white list.")
 			return
 		}
-		if len(config.BlackList) > 0 && checkList(matches, config.BlackList) {
+		if len(config.OtherBlackList) > 0 && checkOhterList(rawPath, config.OtherBlackList) {
 			c.String(http.StatusForbidden, "Forbidden by black list.")
 			return
 		}
@@ -230,6 +232,15 @@ func checkURL(u string) []string {
 func checkList(matches, list []string) bool {
 	for _, item := range list {
 		if strings.HasPrefix(matches[0], item) {
+			return true
+		}
+	}
+	return false
+}
+
+func checkOhterList(url string, list []string) bool {
+	for _, item := range list {
+		if strings.Contains(url, item) {
 			return true
 		}
 	}
