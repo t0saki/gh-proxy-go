@@ -18,9 +18,9 @@ import (
 )
 
 const (
-	sizeLimit = 1024 * 1024 * 1024 * 10 // 允许的文件大小，默认10GB
-	host      = "0.0.0.0"               // 监听地址
-	port      = 8080                    // 监听端口
+	sizeLimit int64 = 1024 * 1024 * 1024 * 10 // 允许的文件大小，默认10GB
+	host            = "0.0.0.0"               // 监听地址
+	port            = 8080                    // 监听端口
 )
 
 //go:embed public/*
@@ -42,6 +42,7 @@ var (
 type Config struct {
 	Host           string   `json:"host"`
 	Port           int64    `json:"port"`
+	SizeLimit      int64    `json:"sizeLimit"`
 	WhiteList      []string `json:"whiteList"`
 	BlackList      []string `json:"blackList"`
 	AllowProxyAll  bool     `json:"allowProxyAll"` // 是否允许代理非github的其他地址
@@ -80,6 +81,9 @@ func main() {
 	// }
 	if config.Port == 0 {
 		config.Port = port
+	}
+	if config.SizeLimit <= 0 {
+		config.SizeLimit = sizeLimit
 	}
 	// 修改静态文件服务方式
 	subFS, err := fs.Sub(public, "public")
@@ -171,7 +175,7 @@ func proxy(c *gin.Context, u string) {
 	}(resp.Body)
 
 	if contentLength, ok := resp.Header["Content-Length"]; ok {
-		if size, err := strconv.Atoi(contentLength[0]); err == nil && size > sizeLimit {
+		if size, err := strconv.ParseInt(contentLength[0], 10, 64); err == nil && size > config.SizeLimit {
 			c.String(http.StatusRequestEntityTooLarge, "File too large.")
 			return
 		}

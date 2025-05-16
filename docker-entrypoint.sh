@@ -25,6 +25,7 @@ sed -i "s|%OTHER_WHITE_LIST%|$OTHER_WHITE_LIST|g" /app/config.json
 sed -i "s|%OTHER_BLACK_LIST%|$OTHER_BLACK_LIST|g" /app/config.json
 sed -i "s|%HTTP_HOST%|$HTTP_HOST|g" /app/config.json
 sed -i "s|%HTTP_PORT%|$HTTP_PORT|g" /app/config.json
+sed -i "s|%SIZE_LIMIT%|$SIZE_LIMIT|g" /app/config.json
 
 echo "Starting..."
 su-exec ${USER} /app/gh-proxy "$@"

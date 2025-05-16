@@ -38,6 +38,7 @@ ENV OTHER_WHITE_LIST=""
 ENV OTHER_BLACK_LIST="\"example3\",\"example4\""
 ENV HTTP_HOST=""
 ENV HTTP_PORT="8080"
+ENV SIZE_LIMIT="10737418240"
 
 COPY --from=builder /build/gh-proxy /app/
 COPY --from=builder /build/config.json.dist /app/

@@ -1,6 +1,7 @@
 {
   "host": "%HTTP_HOST%",
   "port": %HTTP_PORT%,
+  "sizeLimit": %SIZE_LIMIT%,
   "whiteList": [
     %WHITE_LIST%
   ],
