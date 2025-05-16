@@ -72,20 +72,13 @@ func main() {
 		}
 	}()
 
-	b, e := public.ReadDir("public")
-	if e != nil {
-		panic(e)
-	}
-	for _, entry := range b {
-		fmt.Printf("name: %+v \r\n", entry)
-	}
 	// 修改静态文件服务方式
 	subFS, err := fs.Sub(public, "public")
 	if err != nil {
 		panic(fmt.Sprintf("无法创建子文件系统: %v", err))
 	}
 
-	// 使用 StaticFileFS 提供静态文件
+	// 使用 StaticFS 提供静态文件
 	router.StaticFS("/", http.FS(subFS))
 	// router.StaticFile("/", "./public/index.html")
 	// router.StaticFile("/favicon.ico", "./public/favicon.ico")
