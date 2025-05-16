@@ -40,6 +40,8 @@ var (
 )
 
 type Config struct {
+	Host           string   `json:"host"`
+	Port           int64    `json:"port"`
 	WhiteList      []string `json:"whiteList"`
 	BlackList      []string `json:"blackList"`
 	AllowProxyAll  bool     `json:"allowProxyAll"` // 是否允许代理非github的其他地址
@@ -73,7 +75,12 @@ func main() {
 			loadConfig()
 		}
 	}()
-
+	// if config.Host==""{
+	// 	config.Host=host
+	// }
+	if config.Port == 0 {
+		config.Port = port
+	}
 	// 修改静态文件服务方式
 	subFS, err := fs.Sub(public, "public")
 	if err != nil {
@@ -86,8 +93,8 @@ func main() {
 	// router.StaticFile("/favicon.ico", "./public/favicon.ico")
 	// router.StaticFile("/logo.png", "./public/logo.png")
 	router.NoRoute(handler)
-
-	err = router.Run(fmt.Sprintf("%s:%d", host, port))
+	fmt.Printf("starting http server on %s:%d \n", config.Host, config.Port)
+	err = router.Run(fmt.Sprintf("%s:%d", config.Host, config.Port))
 	if err != nil {
 		fmt.Printf("Error starting server: %v\n", err)
 	}

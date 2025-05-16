@@ -36,6 +36,8 @@ ENV BLACK_LIST="\"example3\",\"example4\""
 ENV ALLOW_PROXY_ALL="false"
 ENV OTHER_WHITE_LIST=""
 ENV OTHER_BLACK_LIST="\"example3\",\"example4\""
+ENV HTTP_HOST=""
+ENV HTTP_PORT="8080"
 
 COPY --from=builder /build/gh-proxy /app/
 COPY --from=builder /build/config.json.dist /app/

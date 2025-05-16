@@ -1,4 +1,6 @@
 {
+  "host": "%HTTP_HOST%",
+  "port": %HTTP_PORT%,
   "whiteList": [
     %WHITE_LIST%
   ],
