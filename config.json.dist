@@ -1,0 +1,18 @@
+{
+  "host": "%HTTP_HOST%",
+  "port": %HTTP_PORT%,
+  "sizeLimit": %SIZE_LIMIT%,
+  "whiteList": [
+    %WHITE_LIST%
+  ],
+  "blackList": [
+    %BLACK_LIST%
+  ],
+  "AllowProxyAll": %ALLOW_PROXY_ALL%,
+  "otherWhiteList": [
+    %OTHER_WHITE_LIST%
+  ],
+  "otherBlackList": [
+    %OTHER_BLACK_LIST%
+  ]
+}

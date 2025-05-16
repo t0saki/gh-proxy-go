@@ -1,10 +1,12 @@
 package main
 
 import (
+	"embed"
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"io"
+	"io/fs"
 	"net"
 	"net/http"
 	"os"
@@ -16,10 +18,13 @@ import (
 )
 
 const (
-	sizeLimit = 1024 * 1024 * 1024 * 10 // 允许的文件大小，默认10GB
-	host      = "0.0.0.0"               // 监听地址
-	port      = 8080                    // 监听端口
+	sizeLimit int64 = 1024 * 1024 * 1024 * 10 // 允许的文件大小，默认10GB
+	host            = "0.0.0.0"               // 监听地址
+	port            = 8080                    // 监听端口
 )
+
+//go:embed public/*
+var public embed.FS
 
 var (
 	exps = []*regexp.Regexp{
@@ -35,8 +40,14 @@ var (
 )
 
 type Config struct {
-	WhiteList []string `json:"whiteList"`
-	BlackList []string `json:"blackList"`
+	Host           string   `json:"host"`
+	Port           int64    `json:"port"`
+	SizeLimit      int64    `json:"sizeLimit"`
+	WhiteList      []string `json:"whiteList"`
+	BlackList      []string `json:"blackList"`
+	AllowProxyAll  bool     `json:"allowProxyAll"` // 是否允许代理非github的其他地址
+	OtherWhiteList []string `json:"otherWhiteList"`
+	OtherBlackList []string `json:"otherBlackList"`
 }
 
 func main() {
@@ -65,14 +76,29 @@ func main() {
 			loadConfig()
 		}
 	}()
+	// if config.Host==""{
+	// 	config.Host=host
+	// }
+	if config.Port == 0 {
+		config.Port = port
+	}
+	if config.SizeLimit <= 0 {
+		config.SizeLimit = sizeLimit
+	}
+	// 修改静态文件服务方式
+	subFS, err := fs.Sub(public, "public")
+	if err != nil {
+		panic(fmt.Sprintf("无法创建子文件系统: %v", err))
+	}
 
-	router.StaticFile("/", "./public/index.html")
-	router.StaticFile("/favicon.ico", "./public/favicon.ico")
-	router.StaticFile("/logo.png", "./public/logo.png")
-
+	// 使用 StaticFS 提供静态文件
+	router.StaticFS("/", http.FS(subFS))
+	// router.StaticFile("/", "./public/index.html")
+	// router.StaticFile("/favicon.ico", "./public/favicon.ico")
+	// router.StaticFile("/logo.png", "./public/logo.png")
 	router.NoRoute(handler)
-
-	err := router.Run(fmt.Sprintf("%s:%d", host, port))
+	fmt.Printf("starting http server on %s:%d \n", config.Host, config.Port)
+	err = router.Run(fmt.Sprintf("%s:%d", config.Host, config.Port))
 	if err != nil {
 		fmt.Printf("Error starting server: %v\n", err)
 	}
@@ -101,8 +127,18 @@ func handler(c *gin.Context) {
 			return
 		}
 	} else {
-		c.String(http.StatusForbidden, "Invalid input.")
-		return
+		if !config.AllowProxyAll {
+			c.String(http.StatusForbidden, "Invalid input.")
+			return
+		}
+		if len(config.OtherWhiteList) > 0 && !checkOhterList(rawPath, config.OtherWhiteList) {
+			c.String(http.StatusForbidden, "Forbidden by white list.")
+			return
+		}
+		if len(config.OtherBlackList) > 0 && checkOhterList(rawPath, config.OtherBlackList) {
+			c.String(http.StatusForbidden, "Forbidden by black list.")
+			return
+		}
 	}
 
 	if exps[1].MatchString(rawPath) {
@@ -139,7 +175,7 @@ func proxy(c *gin.Context, u string) {
 	}(resp.Body)
 
 	if contentLength, ok := resp.Header["Content-Length"]; ok {
-		if size, err := strconv.Atoi(contentLength[0]); err == nil && size > sizeLimit {
+		if size, err := strconv.ParseInt(contentLength[0], 10, 64); err == nil && size > config.SizeLimit {
 			c.String(http.StatusRequestEntityTooLarge, "File too large.")
 			return
 		}
@@ -207,6 +243,15 @@ func checkURL(u string) []string {
 func checkList(matches, list []string) bool {
 	for _, item := range list {
 		if strings.HasPrefix(matches[0], item) {
+			return true
+		}
+	}
+	return false
+}
+
+func checkOhterList(url string, list []string) bool {
+	for _, item := range list {
+		if strings.Contains(url, item) {
 			return true
 		}
 	}
