@@ -112,8 +112,9 @@ func handler(c *gin.Context) {
 	}
 
 	if !strings.HasPrefix(rawPath, "http") {
-		c.String(http.StatusForbidden, "Invalid input.")
-		return
+		// c.String(http.StatusForbidden, "Invalid input.")
+		// return
+		rawPath = fmt.Sprintf("https://%s", rawPath)
 	}
 
 	matches := checkURL(rawPath)
