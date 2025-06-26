@@ -168,71 +168,13 @@ func proxy(c *gin.Context, u string) {
 		c.String(http.StatusInternalServerError, fmt.Sprintf("server error %v", err))
 		return
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
 
-	// Check if the response is for a .gitmodules file.
-	// This is the most reliable way to identify the file during a git operation.
-	if strings.Contains(resp.Header.Get("Content-Disposition"), `filename=".gitmodules"`) {
-		handleGitModules(c, resp)
-	} else {
-		handleGenericStream(c, resp)
-	}
-}
-
-// handleGitModules reads, modifies, and serves the .gitmodules file.
-func handleGitModules(c *gin.Context, resp *http.Response) {
-	bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		c.String(http.StatusInternalServerError, fmt.Sprintf("failed to read .gitmodules: %v", err))
-		return
-	}
-
-	// Determine the proxy prefix from the original request Host header.
-	scheme := "http"
-	if c.Request.TLS != nil {
-		scheme = "https"
-	}
-	proxyPrefix := fmt.Sprintf("%s://%s/", scheme, c.Request.Host)
-
-	// Regex to find submodule URLs like 'url = https://github.com/user/repo.git'
-	re := regexp.MustCompile(`(url\s*=\s*)(https?://(?:www\.)?github\.com/[^/]+/[^/]+(?:\.git)?)`)
-
-	originalContent := string(bodyBytes)
-
-	// Replace each found URL with a proxied version.
-	modifiedContent := re.ReplaceAllStringFunc(originalContent, func(match string) string {
-		submatches := re.FindStringSubmatch(match)
-		if len(submatches) < 3 {
-			return match // Should not happen with a valid match
 		}
-		// submatches[1] is "url = "
-		// submatches[2] is "https://github.com/user/repo.git"
-		return submatches[1] + proxyPrefix + submatches[2]
-	})
+	}(resp.Body)
 
-	modifiedBody := []byte(modifiedContent)
-
-	// Copy original headers from GitHub's response.
-	for key, values := range resp.Header {
-		for _, value := range values {
-			c.Header(key, value)
-		}
-	}
-
-	// IMPORTANT: Update the Content-Length header to the new size.
-	c.Header("Content-Length", strconv.Itoa(len(modifiedBody)))
-
-	// Delete security headers that might block operation.
-	c.Header("Content-Security-Policy", "")
-	c.Header("Referrer-Policy", "")
-	c.Header("Strict-Transport-Security", "")
-
-	c.Status(resp.StatusCode)
-	_, _ = c.Writer.Write(modifiedBody)
-}
-
-// handleGenericStream handles all other files by streaming them directly.
-func handleGenericStream(c *gin.Context, resp *http.Response) {
 	if contentLength, ok := resp.Header["Content-Length"]; ok {
 		if size, err := strconv.ParseInt(contentLength[0], 10, 64); err == nil && size > config.SizeLimit {
 			c.String(http.StatusRequestEntityTooLarge, "File too large.")
@@ -254,30 +196,29 @@ func handleGenericStream(c *gin.Context, resp *http.Response) {
 		if checkURL(location) != nil {
 			c.Header("Location", "/"+location)
 		} else {
-			// This is a recursive call for redirects, let the next call handle the body.
 			proxy(c, location)
 			return
 		}
 	}
 
 	c.Status(resp.StatusCode)
-	_, _ = io.Copy(c.Writer, resp.Body)
+	if _, err := io.Copy(c.Writer, resp.Body); err != nil {
+		return
+	}
 }
 
 func loadConfig() {
 	file, err := os.Open("config.json")
 	if err != nil {
-		// Set a default empty config if file doesn't exist
-		if os.IsNotExist(err) {
-			configLock.Lock()
-			config = &Config{}
-			configLock.Unlock()
-			return
-		}
 		fmt.Printf("Error loading config: %v\n", err)
 		return
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+
+		}
+	}(file)
 
 	var newConfig Config
 	decoder := json.NewDecoder(file)

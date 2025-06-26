@@ -5,8 +5,6 @@
 > ### **修改说明 (Modification Note)**
 >
 > 本项目是 [moeyy01/gh-proxy-go](https://github.com/moeyy01/gh-proxy-go) 的一个修改版本。
->
-> **主要变更**：增加了对 `git submodule` 的支持。当通过本代理克隆一个包含子模块的仓库时，程序会自动将 `.gitmodules` 文件中的子模块 URL 也重写为通过本代理加速的地址，从而实现子模块的无缝加速下载。
 
 ## 使用方法
 
