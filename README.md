@@ -8,6 +8,18 @@
 >
 > **主要变更**：增加了对 `git submodule` 的支持。当通过本代理克隆一个包含子模块的仓库时，程序会自动将 `.gitmodules` 文件中的子模块 URL 也重写为通过本代理加速的地址，从而实现子模块的无缝加速下载。
 
+## 使用方法
+
+```bash
+docker run -d \
+  --name gh-proxy \
+  --restart=unless-stopped \
+  -p 8080:8080 \
+  -v /data:/config \
+  -e "TZ=Asia/Shanghai" \
+  ghcr.io/t0saki/gh-proxy-go:main
+```
+
 ## 部署详情
 
 以下是原项目 `github.moeyy.xyz` 实例的部署和性能详情，可供参考：
